@@ -64,7 +64,7 @@ companies = {
 }
 
 
-def get_income_statement_info(ticker: str):
+def get_income_statement_info(ticker: str) -> dict:
     """
     Fetch the latest annual income statement for a given stock symbol
 
@@ -98,7 +98,7 @@ def get_income_statement_info(ticker: str):
         return {"error": f"Unexpected error: {str(e)}"}
 
 
-def get_company_profile(ticker: str):
+def get_company_profile(ticker: str) -> dict:
     """
     Fetch a company's profile information
 
@@ -134,7 +134,7 @@ def get_company_profile(ticker: str):
         return {"error": f"Unexpected error: {str(e)}"}
 
 
-def get_num_shares(ticker: str):
+def get_num_shares(ticker: str) -> dict:
     """
     Fetch the number of shares outstanding
 
