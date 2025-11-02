@@ -65,47 +65,101 @@ companies = {
 
 
 def get_income_statement_info(ticker: str):
-    parameters = {
-        "symbol": ticker,
-        "period": "annual",
-        "limit": 1,
-        "apikey": FMP_API_key,
-    }
-    response = httpx.get(base_URL + income_statement_endpoint, params=parameters)
-    revenue = response.json()[0]["revenue"]
-    net_income = response.json()[0]["netIncome"]
-    return {
-        "revenue": revenue,
-        "net_income": net_income
-    }
+    """
+    Fetch the latest annual income statement for a given stock symbol
+
+    Args:
+        ticker (str): the stock symbol (e.g., AAPL)
+
+    Returns:
+        dict: returns a dictionary containing revenue and net income values
+    """
+    try: 
+        parameters = {
+            "symbol": ticker,
+            "period": "annual",
+            "limit": 1,
+            "apikey": FMP_API_key,
+        }
+        response = httpx.get(base_URL + income_statement_endpoint, params=parameters)
+
+        revenue = response.json()[0]["revenue"]
+        net_income = response.json()[0]["netIncome"]
+        return {
+            "revenue": revenue,
+            "net_income": net_income
+        }
+    except httpx.HTTPStatusError as e:
+        # Handle API errors (like 402, 401, 404)
+        return {"HTTP Error": f"HTTP error {e.response.status_code}: {e.response.text}"}
+    except httpx.RequestError:
+        return {"error": "Network error"}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
 
 def get_company_profile(ticker: str):
-    parameters = {
-        "symbol": ticker,
-        "apikey": FMP_API_key,
-    }
-    response = httpx.get(base_URL + company_profile_endpoint, params=parameters)
-    company_name = response.json()[0]["companyName"]
-    current_price = response.json()[0]["price"]
-    current_market_cap = response.json()[0]["marketCap"]
-    exchange = response.json()[0]["exchange"]
+    """
+    Fetch a company's profile information
 
-    return {
-        "company_name": company_name,
-        "current_price": current_price,
-        "current_market_cap": current_market_cap,
-        "exchange": exchange,
-    }
+    Args:
+        ticker (str): the stock symbol (e.g., TSLA)
+
+    Returns:
+        dict: returns a dictionary containing compnay name, current stock price, current market cap and exchange
+    """
+    try:
+        parameters = {
+            "symbol": ticker,
+            "apikey": FMP_API_key,
+        }
+        response = httpx.get(base_URL + company_profile_endpoint, params=parameters)
+        company_name = response.json()[0]["companyName"]
+        current_price = response.json()[0]["price"]
+        current_market_cap = response.json()[0]["marketCap"]
+        exchange = response.json()[0]["exchange"]
+
+        return {
+            "company_name": company_name,
+            "current_price": current_price,
+            "current_market_cap": current_market_cap,
+            "exchange": exchange,
+        }
+    except httpx.HTTPStatusError as e:
+        # Handle API errors (like 402, 401, 404)
+        return {"HTTP Error": f"HTTP error {e.response.status_code}: {e.response.text}"}
+    except httpx.RequestError:
+        return {"error": "Network error"}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
+
 
 def get_num_shares(ticker: str):
-    parameters = {
-        "symbol": ticker,
-        "apikey": FMP_API_key,
-    }
-    response = httpx.get(base_URL + shares_float_endpoint, params=parameters)
-    shares_outstanding = response.json()[0]["outstandingShares"]
+    """
+    Fetch the number of shares outstanding
 
-    return {
-        "shares_outstanding": shares_outstanding,
-    }
+    Args:
+        ticker (str): takes a stock's symbol 
+    
+    Returns:
+        dict: returns a dictionary containing a number of shares outstanding. 
+    """
+    try:    
+        parameters = {
+            "symbol": ticker,
+            "apikey": FMP_API_key,
+        }
+        response = httpx.get(base_URL + shares_float_endpoint, params=parameters)
+        shares_outstanding = response.json()[0]["outstandingShares"]
+
+        return {
+            "shares_outstanding": shares_outstanding,
+        }
+    except httpx.HTTPStatusError as e:
+        # Handle API errors (like 400, 402, 401, 404)
+        return {"HTTP Error": f"HTTP error {e.response.status_code}: {e.response.text}"}
+    except httpx.RequestError:
+        return {"error": "Network error"}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
+
 
