@@ -97,6 +97,7 @@ def get_income_statement_info(ticker: str):
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
 
+
 def get_company_profile(ticker: str):
     """
     Fetch a company's profile information
