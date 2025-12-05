@@ -1,0 +1,11 @@
+# Environment files – NEVER commit these
+.env
+docker.env
+*.env
+.env.local
+
+# Python/Docker junk
+__pycache__
+*.pyc
+venv
+.pytest_cache
