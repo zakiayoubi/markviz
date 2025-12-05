@@ -11,4 +11,7 @@ type in the console from the project root: pytest -vvs
 ```bash
 docker pull zakiayoubi/markviz:latest
 
+# run this command: 
+
 docker run -p 8000:8000 -e FMP_API_KEY=YOUR_OWN_API_KEY zakiayoubi/markviz:latest
+
