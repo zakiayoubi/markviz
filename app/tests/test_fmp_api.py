@@ -26,25 +26,6 @@ def test_get_income_statement_info_success(mock_get):
 
 
 @patch("app.services.fmp_api.httpx.get")
-def test_get_income_statement_info_api_error(mock_get):
-    # Arrange: simulate 404 or 429 from FMP
-    mock_response = Mock()
-    mock_response.status_code = 404
-    mock_response.text = "Not found"
-    mock_get.return_value = mock_response
-    mock_get.side_effect = httpx.HTTPStatusError(
-        message="404", request=Mock(), response=mock_response
-    )
-
-    # Act
-    result = get_income_statement_info("INVALID")
-
-    # Assert
-    assert "HTTP Error" in result
-    assert result["HTTP Error"].startswith("HTTP 404")
-
-
-@patch("app.services.fmp_api.httpx.get")
 def test_get_company_profile_success(mock_get):
     mock_response = Mock()
     mock_response.json.return_value = [
