@@ -1,5 +1,4 @@
 import httpx
-
 # importing the httpx module and using the get function
 # from this module through: httpx.get
 from app.config import (
@@ -21,7 +20,9 @@ def safe_fmp_get(url: str, parameters: dict) -> dict:
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        return {"HTTP Error": f"HTTP {e.response.status_code}: {e.response.text}"}
+        return {
+            "HTTP Error": f"HTTP {e.response.status_code}: {e.response.text}"
+        }
     except httpx.RequestError:
         return {"error": "Network Error"}
     except Exception as e:
@@ -37,19 +38,20 @@ def get_income_statement_info(ticker: str) -> dict:
     }
     data = safe_fmp_get(base_URL + income_statement_endpoint, parameters)
 
-    # ← FIXED: check for errors OR empty list
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "No income statement data found"}
 
     item = data[0]
-    return {"revenue": item.get("revenue", 0), "net_income": item.get("netIncome", 0)}
+    return {
+        "revenue": item.get("revenue", 0),
+        "net_income": item.get("netIncome", 0),
+    }
 
 
 def get_company_profile(ticker: str) -> dict:
     parameters = {"symbol": ticker, "apikey": FMP_API_KEY}
     data = safe_fmp_get(base_URL + company_profile_endpoint, parameters)
 
-    # ← FIXED: check for errors OR empty list
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "Company not found"}
 
@@ -66,7 +68,6 @@ def get_num_shares(ticker: str) -> dict:
     parameters = {"symbol": ticker, "apikey": FMP_API_KEY}
     data = safe_fmp_get(base_URL + shares_float_endpoint, parameters)
 
-    # ← FIXED: check for errors OR empty list
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "No shares data found"}
 
