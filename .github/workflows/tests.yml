@@ -1,0 +1,17 @@
+# name: Test
+# on:
+#   pull_request:
+#     branches: [main]
+#   push:
+#     branches: [main]
+
+# jobs:
+#     test:
+#         runs-on: ubunto-latest
+
+#         steps:
+#           - uses: actions/checkout@v4
+#           - name: Install dependencies
+#             run: pip install pytest httpx
+#           - name: Run tests
+#             run: pytest -v
