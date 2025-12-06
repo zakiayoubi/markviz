@@ -83,5 +83,5 @@ jobs:
           tags: |
             zakiayoubi/markviz:latest
             zakiayoubi/markviz:${{ steps.version.outputs.version }}
-            gtcr.io/${{ github.repository }}:latest
-            gtcr.io/${{ github.registrory }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.registrory }}:${{ steps.version.outputs.version }}
