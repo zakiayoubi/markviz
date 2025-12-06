@@ -21,7 +21,8 @@ def safe_fmp_get(url: str, parameters: dict) -> dict:
         return response.json()
     except httpx.HTTPStatusError as e:
         return {
-            "HTTP Error": f"HTTP {e.response.status_code}: {e.response.text}"
+            "HTTP Error":
+            f"HTTP {e.response.status_code}: {e.response.text}"
         }
     except httpx.RequestError:
         return {"error": "Network Error"}
@@ -36,7 +37,9 @@ def get_income_statement_info(ticker: str) -> dict:
         "limit": 1,
         "apikey": FMP_API_KEY,
     }
-    data = safe_fmp_get(base_URL + income_statement_endpoint, parameters)
+    data = safe_fmp_get(
+        base_URL + income_statement_endpoint, parameters
+        )
 
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "No income statement data found"}
@@ -50,7 +53,9 @@ def get_income_statement_info(ticker: str) -> dict:
 
 def get_company_profile(ticker: str) -> dict:
     parameters = {"symbol": ticker, "apikey": FMP_API_KEY}
-    data = safe_fmp_get(base_URL + company_profile_endpoint, parameters)
+    data = safe_fmp_get(
+        base_URL + company_profile_endpoint, parameters
+        )
 
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "Company not found"}
@@ -66,7 +71,9 @@ def get_company_profile(ticker: str) -> dict:
 
 def get_num_shares(ticker: str) -> dict:
     parameters = {"symbol": ticker, "apikey": FMP_API_KEY}
-    data = safe_fmp_get(base_URL + shares_float_endpoint, parameters)
+    data = safe_fmp_get(
+        base_URL + shares_float_endpoint, parameters
+        )
 
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "No shares data found"}
