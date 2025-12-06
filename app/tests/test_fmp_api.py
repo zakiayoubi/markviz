@@ -6,12 +6,14 @@ from app.services.fmp_api import (
     )
 import httpx
 
+
 @patch("app.services.fmp_api.httpx.get")
 def test_get_income_statement_info_success(mock_get):
     # Arrange
     mock_response = Mock()
     mock_response.status_code = 200
-    mock_response.json.return_value = [{"revenue": 394_328_000_000, "netIncome": 99_803_000_000}]
+    sample_res = {"revenue": 394_328_000_000, "netIncome": 99_803_000_000}
+    mock_response.json.return_value = [sample_res]
     mock_get.return_value = mock_response
 
     # Act
@@ -24,6 +26,7 @@ def test_get_income_statement_info_success(mock_get):
         "net_income": 99803000000
     }
     mock_get.assert_called_once()
+
 
 @patch("app.services.fmp_api.httpx.get")
 def test_get_income_statement_info_api_error(mock_get):

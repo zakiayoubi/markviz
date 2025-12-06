@@ -8,15 +8,18 @@ from app.services.fmp_api import (
 
 app = FastAPI()
 
+
 # landing route
 @app.get("/")
 def get_root():
     return {"message": "Welcome to MarkViz!"}
 
+
 # health check route
 @app.get("/live")
 def live():
     return {"status": "ok"}
+
 
 # summary route
 @app.get("/stock_summary/{symbol}")
@@ -31,8 +34,3 @@ def get_stock_summary(symbol: str) -> dict:
 
     stock_summary = {**profile, **income, **shares}
     return {"summary": stock_summary}
-
-
-
-    
-

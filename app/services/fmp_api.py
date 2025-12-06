@@ -1,7 +1,6 @@
 import httpx
-# importing the httpx module and using the get function from this module through: httpx.get
-
-
+# importing the httpx module and using the get function 
+# from this module through: httpx.get
 from app.config import (
     FMP_API_KEY,
     base_URL,
@@ -10,64 +9,8 @@ from app.config import (
     shares_float_endpoint,
 )
 
-companies = {
-
-    "Apple Inc.": "AAPL",
-    "Tesla Inc.": "TSLA",
-    "Amazon.com Inc.": "AMZN",
-    "Microsoft Corporation": "MSFT",
-    "NVIDIA Corporation": "NVDA",
-    "Alphabet Inc. (Google)": "GOOGL",
-    "Meta Platforms Inc.": "META",
-    "Netflix Inc.": "NFLX",
-    "JPMorgan Chase & Co.": "JPM",
-    "Visa Inc.": "V",
-    "Bank of America Corporation": "BAC",
-    "Advanced Micro Devices Inc.": "AMD",
-    "PayPal Holdings Inc.": "PYPL",
-    "The Walt Disney Company": "DIS",
-    "AT&T Inc.": "T",
-    "Pfizer Inc.": "PFE",
-    "Costco Wholesale Corporation": "COST",
-    "Intel Corporation": "INTC",
-    "The Coca-Cola Company": "KO",
-    "Target Corporation": "TGT",
-    "Nike Inc.": "NKE",
-    "SPDR S&P 500 ETF Trust": "SPY",
-    "The Boeing Company": "BA",
-    "Alibaba Group Holding Limited": "BABA",
-    "Exxon Mobil Corporation": "XOM",
-    "Walmart Inc.": "WMT",
-    "General Electric Company": "GE",
-    "Cisco Systems Inc.": "CSCO",
-    "Verizon Communications Inc.": "VZ",
-    "Johnson & Johnson": "JNJ",
-    "Chevron Corporation": "CVX",
-    "Palantir Technologies Inc.": "PLTR",
-    "Block Inc. (Square)": "SQ",
-    "Shopify Inc.": "SHOP",
-    "Starbucks Corporation": "SBUX",
-    "SoFi Technologies Inc.": "SOFI",
-    "Robinhood Markets Inc.": "HOOD",
-    "Roblox Corporation": "RBLX",
-    "Snap Inc.": "SNAP",
-    "Uber Technologies Inc.": "UBER",
-    "FedEx Corporation": "FDX",
-    "AbbVie Inc.": "ABBV",
-    "Etsy Inc.": "ETSY",
-    "Moderna Inc.": "MRNA",
-    "Lockheed Martin Corporation": "LMT",
-    "General Motors Company": "GM",
-    "Ford Motor Company": "F",
-    "Rivian Automotive Inc.": "RIVN",
-    "Lucid Group Inc.": "LCID",
-    "Carnival Corporation": "CCL",
-    "Delta Air Lines Inc.": "DAL",
-    "United Airlines Holdings Inc.": "UAL"
-}
 
 def safe_fmp_get(url: str, parameters: dict) -> dict:
-
     """
     helper function to safely call the FMP API and return the data or an error dict
     """
@@ -81,7 +24,8 @@ def safe_fmp_get(url: str, parameters: dict) -> dict:
         return {"error": "Network Error"}
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
-        
+    
+
 def get_income_statement_info(ticker: str) -> dict:
     parameters = {
         "symbol": ticker,
@@ -94,7 +38,7 @@ def get_income_statement_info(ticker: str) -> dict:
     # ← FIXED: check for errors OR empty list
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "No income statement data found"}
-
+    
     item = data[0]
     return {
         "revenue": item.get("revenue", 0),
@@ -109,7 +53,7 @@ def get_company_profile(ticker: str) -> dict:
     # ← FIXED: check for errors OR empty list
     if not isinstance(data, list) or len(data) == 0:
         return {"error": "Company not found"}
-
+    
     item = data[0]
     return {
         "company_name": item.get("companyName", "Unknown"),
