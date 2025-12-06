@@ -3,7 +3,7 @@ from app.services.fmp_api import (
     get_income_statement_info,
     get_company_profile,
     get_num_shares,
-    )
+)
 
 
 app = FastAPI()

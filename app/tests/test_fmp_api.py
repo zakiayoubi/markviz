@@ -1,9 +1,9 @@
 from unittest.mock import patch, Mock
 from app.services.fmp_api import (
-    get_income_statement_info, 
-    get_company_profile, 
-    get_num_shares
-    )
+    get_income_statement_info,
+    get_company_profile,
+    get_num_shares,
+)
 import httpx
 
 
@@ -21,10 +21,7 @@ def test_get_income_statement_info_success(mock_get):
     print(result)
 
     # Assert
-    assert result == {
-        "revenue": 394328000000,
-        "net_income": 99803000000
-    }
+    assert result == {"revenue": 394328000000, "net_income": 99803000000}
     mock_get.assert_called_once()
 
 
@@ -50,12 +47,14 @@ def test_get_income_statement_info_api_error(mock_get):
 @patch("app.services.fmp_api.httpx.get")
 def test_get_company_profile_success(mock_get):
     mock_response = Mock()
-    mock_response.json.return_value = [{
-        "companyName": "Apple Inc.",
-        "price": 175.5,
-        "marketCap": 2800000000000,
-        "exchange": "NASDAQ"
-    }]
+    mock_response.json.return_value = [
+        {
+            "companyName": "Apple Inc.",
+            "price": 175.5,
+            "marketCap": 2800000000000,
+            "exchange": "NASDAQ",
+        }
+    ]
     mock_response.status_code = 200
     mock_get.return_value = mock_response
 
