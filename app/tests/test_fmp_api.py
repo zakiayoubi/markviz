@@ -4,7 +4,6 @@ from app.services.fmp_api import (
     get_company_profile,
     get_num_shares,
 )
-import httpx
 
 
 @patch("app.services.fmp_api.httpx.get")
