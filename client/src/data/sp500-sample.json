@@ -1,0 +1,44 @@
+[
+    {
+        "sector": "Technology",
+        "company": "Apple",
+        "marketCap": 3500,
+        "percentChange": 5.4
+    },
+    {
+        "sector": "Technology",
+        "company": "Microsoft",
+        "marketCap": 3200,
+        "percentChange": 2.4
+    },
+    {
+        "sector": "Technology",
+        "company": "Nvidia",
+        "marketCap": 3000,
+        "percentChange": 12.4
+    },
+    {
+        "sector": "Financials",
+        "company": "JPMorgan",
+        "marketCap": 600,
+        "percentChange": -3.4
+    },
+    {
+        "sector": "Financials",
+        "company": "Bank of America",
+        "marketCap": 350,
+        "percentChange": -6.4
+    },
+    {
+        "sector": "Healthcare",
+        "company": "Eli Lilly",
+        "marketCap": 900,
+        "percentChange": 0.4
+    },
+    {
+        "sector": "Healthcare",
+        "company": "UnitedHealth",
+        "marketCap": 500,
+        "percentChange": -1.4
+    }
+]

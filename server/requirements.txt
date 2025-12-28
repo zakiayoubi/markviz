@@ -1,0 +1,4 @@
+# pip install sqlalchemy psycopg2-binary python-dotenv
+
+# sqlalchemy: the python ORM library (object relatinoal mapper)
+# psycopg2-binary: the Postgres driver

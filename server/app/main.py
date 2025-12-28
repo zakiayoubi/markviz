@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from app.services.fmp_api import (
     get_income_statement_info,
     get_company_profile,
@@ -8,11 +9,27 @@ from app.services.fmp_api import (
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # landing route
 @app.get("/")
 def get_root():
     return {"message": "Welcome to MarkViz!"}
+
+
+# At the bottom, after creating app = FastAPI()
+from .routes import auth, stocks, portfolio
+
+app.include_router(auth.router)
+app.include_router(stocks.router)
+app.include_router(portfolio.router)
 
 
 # health check route

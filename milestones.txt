@@ -1,0 +1,63 @@
+MVP Milestones - Stock Tracker App
+==================================
+
+Goal: Build a simple stock tracker with:
+- User accounts (sign up / login)
+- Personal portfolios (add stocks, track value and returns)
+- S&P 500 treemap (like Finviz)
+- Individual stock detail pages
+
+steps:
+
+1. Set up the project structure
+   [ ] Create backend folder and frontend folder
+   [ ] Set up Python virtual environment and install requirements.txt
+   [ ] Set up a basic React app (npx create-react-app frontend)
+   [ ] Make sure backend runs with "uvicorn main:app --reload"
+
+2. Database and user accounts
+   [ ] Install and run PostgreSQL locally (or use Docker)
+   [ ] Create a simple User model (email, password)
+   [ ] Add sign-up and login endpoints (with password hashing and JWT token)
+   [ ] Test registration and login with a tool like Postman or curl
+
+3. Portfolio basics
+   [ ] Create Portfolio model (linked to User)
+   [ ] Create Holding model (ticker, shares, purchase price, date)
+   [ ] Add API endpoints: create portfolio, add/remove holdings
+   [ ] Calculate and show total portfolio value (using current prices)
+
+4. Get stock data working
+   [ ] Use yfinance to fetch current price for any ticker (e.g., AAPL)
+   [ ] Use yfinance to get list of S&P 500 companies (tickers, names, sectors, market cap)
+   [ ] Create a simple API endpoint that returns current price for a ticker
+   [ ] Create an endpoint that returns S&P 500 data for the treemap
+
+5. Build the S&P 500 treemap (frontend)
+   [ ] Create a Treemap page in React
+   [ ] Fetch S&P 500 data from your backend
+   [ ] Display a basic treemap (use a simple library like recharts-treemap or react-vis)
+   [ ] Make boxes sized by market cap, colored by daily % change (green/red)
+   [ ] Add hover to show ticker and name
+
+6. Individual stock detail page
+   [ ] Create a StockDetail page in React
+   [ ] Fetch price, company name, sector, market cap, and recent performance
+   [ ] Show current price, daily change, and a simple chart (line chart of last 1 month)
+   [ ] Add button: "Add to my portfolio"
+
+7. Connect portfolio to live prices
+   [ ] Update portfolio value using current prices from yfinance
+   [ ] Show daily gain/loss and total return %
+   [ ] Add a simple portfolio dashboard page
+
+8. Add tests
+   [ ] Implement unit tests
+   [ ] Implement integration tests
+
+9. Polish and final checks
+   [ ] Make sure user stays logged in (save JWT token in frontend)
+   [ ] Add basic error messages (e.g., "stock not found")
+   [ ] Test everything works together
+   [ ] Write a short README with how to run the app
+
