@@ -131,16 +131,7 @@ export default function PriceChart({ propTicker }) {
                 grid: { display: false },
                 ticks: {
                     color: '#aaa',
-                    maxTicksLimit: 6, // General limit
-                    // // Show label only every Nth point
-                    // callback: function (value, index, ticks) {
-                    //     // For 1D: show every ~1 hours (assuming ~390 points in a day)
-                    //     if (timeRange === '1D') {
-                    //         return (index  % 90) === 0 ? this.getLabelForValue(value) : '';
-                    //     }
-                    //     // For other ranges: show every 5th or so
-                    //     // return index % Math.ceil(ticks.length / 4) === 0 ? this.getLabelForValue(value) : '';
-                    // }
+                    maxTicksLimit: 6,
                 }
             },
             y: {

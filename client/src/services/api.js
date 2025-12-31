@@ -18,14 +18,12 @@ export const api = {
     },
     async post(endpoint, data) {
         const token = localStorage.getItem("token")
-        console.log(localStorage)
         const headers = {
             "Content-Type": "application/json"
         }
         if (token) {
             headers["Authorization"] = `Bearer ${token}`
         }
-        console.log(headers)
         const response = await fetch(API_BASE_URL + endpoint, {
             method: "POST",
             headers: headers,

@@ -51,7 +51,6 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login_user(user: UserLogin, db: Session = Depends(get_db)):
-    print(user)
     # verify if the user exists in the db
     db_user = db.query(User).filter(user.email == User.email).first()
     if not db_user:
@@ -69,8 +68,6 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
 
     # create access token
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    print(access_token)
-
     return {"token": access_token, "token_type": "bearer"}
 
 

@@ -1,0 +1,107 @@
+.logo {
+    display: flex;
+    padding: 1rem 2rem;
+}
+
+.logo h1 {
+    font-weight: 800;
+    font-size: 3rem;
+    text-align: center;
+}
+
+.logo p {
+    color: var(--text-secondary)
+
+}
+
+.appName {
+    padding: 1rem;
+}
+
+.navParent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin: 1rem 0;
+}
+.navBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.navBtnParent {
+    margin: 0 1rem;
+}
+
+.navBtn:hover {
+    color: var(--text-primary);
+    border-radius: .5rem;
+    background-color: var(--accent);
+}
+
+.primaryBtn {
+    background-color: var(--text-primary);
+    padding: 0.6rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.primaryBtn:hover {
+    background-color: var(--accent-dim);
+}
+
+
+.secondaryBtn {
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0.6rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color, #333);
+    font-size: 1rem;
+    cursor: pointer;
+    margin: 0 .5rem;
+}
+
+.secondaryBtn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent);
+}
+
+.bottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid white;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    z-index: 2
+}
+
+.bottomNavBtn {
+    background: none;
+    border: none;
+    padding: .5rem 1rem;
+    font-size: .9rem;
+    cursor: pointer;
+    color: var(--text-secondary)
+}
+
+

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../services/api";
+import { api } from "../../services/api";
+import styles from "./SearchBar.module.css"
 
 export default function SearchBar({onTickerSelect}) {
     const [allStocks, setAllStocks] = useState([])
@@ -61,8 +62,9 @@ export default function SearchBar({onTickerSelect}) {
 
 
     return (
-        <div ref={inputRef} style={{position: "relative"}}>
-            <input 
+        <div className={styles.container} ref={inputRef}>
+            <input
+            className={styles.input}
             type="text"
             placeholder="Search for stocks ..."
             value = {query}
@@ -70,29 +72,22 @@ export default function SearchBar({onTickerSelect}) {
             onFocus={() => query && setShowSuggestions(true)}
             />
             {showSuggestions && suggestions.length > 0 && (
-                <div style={{
-                    border: "solid red 5px", 
-                    position: "absolute", 
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    zIndex: "1000",
-                    
-                    }}>
+                <div className={styles.suggestionCard}>
                     {suggestions.map((stock) => (
                         <div
+                            className={styles.suggestion}
                             key={stock.ticker}
                             onClick={() => handleSelect(stock.ticker)}
-                            style={{
-                                padding: "10px",
-                                cursor: "pointer",
-                                borderBottom: "1px solid #333",
-                            }}
-                            onMouseEnter={(e) => (e.target.style.backgroundColor = "red")}
-                            onMouseLeave={(e) => (e.target.style.backgroundColor = "green")}
                         >
-                            <strong>{stock.ticker}</strong> - {stock.name}
-                            <span>{stock.exchange}</span>
+                            <div className={styles.suggestionChild}>
+                                <div className={styles.title}>
+                                    <p className={styles.ticker}>{stock.ticker}</p>
+                                    <p className={styles.companyName}>{stock.name}</p>
+                                </div>
+                                <p>{stock.exchange}</p>                              
+                            </div>
+
+
                         </div>
                     ))}
                 </div>

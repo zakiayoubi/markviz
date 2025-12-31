@@ -334,7 +334,10 @@ async def get_summary(ticker: str):
 
 
 async def fetch_tickers(exchange: str):
-    exchange_codes = {"nasdaq": "XNAS", "nyse": "XNYS"}
+    # exchange_codes = {"nasdaq": "XNAS", "nyse": "XNYS"}
+    exchange_codes = {
+        "nyse": "XNYS"
+    }  # comment this line and uncomment the above line later
     url = MASSIVE_BASE_URL + MASSIVE_All_Tickers_ENDPOINT
     params = {
         "market": "stocks",
@@ -353,15 +356,13 @@ async def fetch_tickers(exchange: str):
             response.raise_for_status()
             data = response.json()
 
-            results = data.get("results", [])  # Fixed: "results" not "result"
+            results = data.get("results", [])
             for stock in results:
                 tickers.append(
                     {
-                        "ticker": stock.get(
-                            "ticker"
-                        ),  # Fixed: get() not get[]
+                        "ticker": stock.get("ticker"),
                         "name": stock.get("name"),
-                        "exchange": exchange.upper(),  # Simplified: just use the exchange param
+                        "exchange": exchange.upper(),
                     }
                 )
 
@@ -370,7 +371,7 @@ async def fetch_tickers(exchange: str):
 
             # Subsequent requests
             while next_url:
-                await asyncio.sleep(30)
+                # await asyncio.sleep(30)
                 # Append API key to next_url
                 url_with_key = f"{next_url}&apiKey={MASSIVE_API_KEY}"
 
@@ -420,10 +421,11 @@ async def get_all_tickers():
         and (now - CACHE_ALLTICKERS_TIMESTAMP) < CACHE_ALLTICKERS_DURATION
     ):
         return {"data": CACHE_ALLTICKERS_LIST}
-    nyse, nasdaq = await asyncio.gather(
-        fetch_tickers("nyse"), fetch_tickers("nasdaq")
-    )
-    tickers = nyse + nasdaq
+    # nyse, nasdaq = await asyncio.gather(
+    #     fetch_tickers("nyse"), fetch_tickers("nasdaq")
+    # )
+    # tickers = nyse + nasdaq
+    tickers = await fetch_tickers("nyse")
     CACHE_ALLTICKERS_LIST = tickers
     CACHE_ALLTICKERS_TIMESTAMP = now
 

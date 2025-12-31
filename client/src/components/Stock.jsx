@@ -4,7 +4,7 @@ import {api} from "../services/api"
 import PriceChart from "./PriceChart";
 import AboutStock from "./AboutStock";
 import StockStats from "./StockStats";
-import Header from "./Header";
+import Header from "./header/Header";
 
 export default function Stock() {
     return (

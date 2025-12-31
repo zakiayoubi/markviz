@@ -1,10 +1,10 @@
 import { useState } from "react"
-import SearchBar from "./SearchBar"
-import PriceChart from "../pages/PriceChart"
+import SearchBar from "./searchBar/SearchBar"
+import PriceChart from "./PriceChart"
 import QuickSummary from "./QuickSummary"
 import {api} from "../services/api"
 
-export default function Trade() {
+export default function Trade({ onSuccess }) {
     const [selectedTicker, setSelectedTicker] = useState(null)
 
     const [action, setAction] = useState("buy")
@@ -17,15 +17,22 @@ export default function Trade() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
-        const data = {
+        try {
+           const data = {
             "ticker": selectedTicker,
             "shares": quantity,
             "buy_price": currentPrice
+            }
+            const response = await api.post("/portfolio/holdings", data)
+            console.log(response)
+            if (response.status === 200) {
+                onSuccess()
+            } 
+        } catch (err) {
+            console.log(err)
         }
-        console.log(data)
-        const response = await api.post("/portfolio/holdings", data)
-        console.log(response.data)
+        
+
     }
 
     return (

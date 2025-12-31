@@ -1,0 +1,83 @@
+.container {
+    position: relative;
+    max-width: 400px;
+    width: 100%;
+}
+.input {
+    max-width: 400px;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    height: 40px;
+    border-radius: 1rem;
+    outline: none;
+    border: none;
+    padding: 0 1rem;
+    color: white;
+    font-size: .9rem;
+    margin: 1rem 0;
+}
+
+.input:hover {
+    outline: solid white 1px;
+}
+
+.input:focus {
+    outline: solid white 2px
+}
+
+.suggestionCard {
+    background-color: var(--bg-secondary);
+    border-radius: 1rem;
+    max-width: 400px;
+    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-Index: 1;
+    padding: 0 1rem;
+}
+
+.suggestion {
+    border-bottom: solid white 1px;
+    margin: .5rem 0;
+}
+
+.suggestionChild {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 1rem;
+    padding: .5rem;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.suggestionChild:hover {
+    background-color: var(--accent-dim);
+    border-radius: 1rem;
+    outline: white solid 1px;
+}
+
+.title {
+    padding: 0 .3rem;
+}
+
+.companyName {
+    max-width: 250px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--accend-dim)
+
+}
+
+.ticker {
+    color: white;
+    font-weight: 600;
+}
+
+
+
+

@@ -1,7 +1,8 @@
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {api} from "../services/api";
-import { AuthContext } from "../context/AuthContext";
+import {api} from "../../services/api";
+import { AuthContext } from "../../context/AuthContext";
+import styles from "./Login.module.css"
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -29,30 +30,30 @@ export default function Login() {
     // localStorage.removeItem("token");                         // Delete it
 
     return (
-        <div style={{ padding: "2rem", maxWidth: "400px", margin: "0 auto" }}>
+        <div className={styles.container}>
             <h1>Login</h1>
-            <form onSubmit={handleSubmit}>
+            <form className={styles.form} onSubmit={handleSubmit}>
                 <input
+                    className={styles.input}
                     type="email"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    style={{ display: "block", margin: "1rem 0", width: "100%" }}
                 />
                 <input
+                    className={styles.input}
                     type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    style={{ display: "block", margin: "1rem 0", width: "100%" }}
                 />
-                <button type="submit">Login</button>
+                <button className={styles.loginBtn} type="submit">Login</button>
             </form>
             {error && <p style={{ color: "red" }}>{error}</p>}
             <p>
-                No account? <a href="/register">Register</a>
+                Don't have an account? <a className={styles.registerTag}href="/register">Sign up</a>
             </p>
         </div>
     );

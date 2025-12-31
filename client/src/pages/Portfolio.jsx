@@ -1,5 +1,6 @@
 import { useState } from "react"
 import Trade from "../components/Trade"
+import Holding from "../components/Holding"
 
 export default function Portfolio() {
     const [portfolioButton, setPortfolioButton] = useState(true)
@@ -15,18 +16,25 @@ export default function Portfolio() {
         setPortfolioButton(false)
     }
 
+    const switchToPortfolio = () => {
+        setPortfolioButton(true)
+        setTradeButton(false)
+    }
+
     return (
         <div>
             <button onClick={handlePortfolioClick}>Portfolio</button>
             <button onClick={handleTradeClick}>Trade</button>
             {
                 portfolioButton &&
-                <div style={{width: "400px", border: "solid black 5px"}}>Portfolio</div>
+                <div>
+                    <Holding />
+                </div>
             }
             {
                 tradeButton && 
                 <div style={{ width: "400px", border: "solid green 5px" }}>
-                    <Trade />
+                    <Trade onSuccess= {switchToPortfolio}/>
                 </div>
             }
         </div>
