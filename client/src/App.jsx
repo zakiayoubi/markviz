@@ -1,10 +1,11 @@
 import { Routes, Route } from "react-router-dom";
-import Layout from "./components/Layout/Layout"
+import Layout from "./components/layout/Layout"
 import Home from "./pages/home/Home";
 import Register from "./pages/register/Register";
 import Login from "./pages/login/Login";
-import Stock from "./components/Stock";
-import Portfolio from "./pages/Portfolio";
+import Stock from "./pages/stock/Stock"
+import Portfolio from "./pages/portfolio/Portfolio";
+import Trade from "./pages/trade/Trade";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -20,6 +21,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Portfolio />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trade"
+          element={
+            <ProtectedRoute>
+              <Trade />
             </ProtectedRoute>
           }
         />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { api } from "../services/api";
+import { api } from "../../services/api";
 import { useParams } from "react-router-dom";
+import styles from "./StockStats.module.css"
 
 export default function StockStats() {
     const [stats, setStats] = useState(null);
@@ -21,20 +22,20 @@ export default function StockStats() {
         fetchStats();
     }, [ticker]);
 
-    if (loading) return <div style={{ padding: "2rem" }}>Loading stats...</div>;
-    if (!stats) return <div style={{ padding: "2rem" }}>No stats available</div>;
+    if (loading) return <div>Loading stats...</div>;
+    if (!stats) return <div>No stats available</div>;
 
     const { valuation, performance, financial_health, trading_activity } = stats;
 
     const StatGroup = ({ title, items }) => (
-        <div style={{ marginBottom: "2rem" }}>
-            <h3 style={{ margin: "0 0 1rem 0", color: "#aaa", fontSize: "1.1rem" }}>{title}</h3>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+        <div className={styles.statSector}>
+            <h3 className={styles.title}>{title}</h3>
+            <table>
                 <tbody>
                     {items.map(([key, value]) => (
-                        <tr key={key}>
-                            <td style={{ color: "#aaa", paddingRight: "2rem" }}>{key}</td>
-                            <td style={{ textAlign: "right", fontWeight: "600" }}>{value}</td>
+                        <tr className={styles.row} key={key}>
+                            <td className={styles.key}>{key}</td>
+                            <td className={styles.value}>{value}</td>
                         </tr>
                     ))}
                 </tbody>
@@ -43,13 +44,9 @@ export default function StockStats() {
     );
 
     return (
-        <div style={{ padding: "2rem" }}>
-            <h2 style={{ marginBottom: "2rem" }}>Key Statistics</h2>
-            <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: "2rem"
-            }}>
+        <div className={styles.container}>
+            <h2>Key Statistics</h2>
+            <div className={styles.statsContainer}>
                 <StatGroup
                     title="Valuation"
                     items={[

@@ -17,7 +17,7 @@ export default function Header() {
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <=900)
+            setIsMobile(window.innerWidth <=1024)
         }
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
@@ -44,6 +44,9 @@ export default function Header() {
                                     </button>
                                     <button className={styles.navBtn} onClick={() => navigate("/portfolio")}>
                                         Portfolio
+                                    </button>
+                                    <button className={styles.navBtn} onClick={() => navigate("/trade")}>
+                                        Trade
                                     </button>
                                 </div>
 
@@ -79,6 +82,7 @@ export default function Header() {
                         }
 
                     </div>
+                    <div className={styles.line}> </div>
                 </div>
             </header>
             {
@@ -90,6 +94,9 @@ export default function Header() {
                         </button>
                         <button className={styles.bottomNavBtn} onClick={() => navigate("/portfolio")}>
                             Portfolio
+                        </button>
+                        <button className={styles.bottomNavBtn} onClick={() => navigate("/trade")}>
+                            Trade
                         </button>
                         <button className={styles.bottomNavBtn} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                             Search

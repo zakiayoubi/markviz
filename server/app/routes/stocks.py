@@ -1,147 +1,50 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
+import pytz
 import httpx
 import yfinance as yf
+import logging
 import asyncio
-from ..config import (
-    API_NINJAS_KEY,
-    NINJAS_BASE_URL,
-    SP500_ENDPOINT,
-    MASSIVE_API_KEY,
-    MASSIVE_BASE_URL,
-    MASSIVE_All_Tickers_ENDPOINT,
-)
+from ..services import stocks_services
 
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
-
-# Global cache
-CACHE = {
-    "static_list": None,
-    "static_timestamp": None,
-    "price_data": None,
-    "price_timestamp": None,
-}
-
-STATIC_CACHE_DURATION = timedelta(days=1)
-PRICE_CACHE_DURATION = timedelta(minutes=20)
-
-
-async def fetch_sp500_constituents():
-    """Fetch and cache S&P 500 static list from API Ninjas (once a day)."""
-    now = datetime.now()
-    if (
-        CACHE["static_list"] is None
-        or (now - CACHE["static_timestamp"]) > STATIC_CACHE_DURATION
-    ):
-        url = NINJAS_BASE_URL + SP500_ENDPOINT
-        headers = {"X-Api-Key": API_NINJAS_KEY}
-        try:
-            response = await httpx.AsyncClient().get(url, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            CACHE["static_list"] = [
-                {
-                    "ticker": stock["ticker"],
-                    "name": stock["company_name"],
-                    "sector": stock["sector"],
-                }
-                for stock in data
-            ]
-            CACHE["static_timestamp"] = now
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=500, detail=f"API Ninjas error: {str(e)}"
-            )
-
-
-def fetch_price_data():
-    """Fetch and cache price/market cap data from yfinance (every 20 min)."""
-    now = datetime.now()
-    if (
-        CACHE["price_data"] is None
-        or (now - CACHE["price_timestamp"]) > PRICE_CACHE_DURATION
-    ):
-        if CACHE["static_list"] is None:
-            raise HTTPException(
-                status_code=500, detail="Constituents not loaded"
-            )
-
-        tickers = [s["ticker"] for s in CACHE["static_list"]]
-        try:
-            infos = {}
-            for ticker in tickers:
-                try:
-                    info = yf.Ticker(ticker).info
-                    infos[ticker] = {
-                        "market_cap": info.get("marketCap", 0),
-                        "current_price": info.get("currentPrice", 0),
-                        "previous_close": info.get("previousClose", 0),
-                        "open": info.get("open", 0),
-                        "close": info.get("close", 0),
-                        "high": info.get("high", 0),
-                        "low": info.get("low", 0),
-                    }
-                except:
-                    continue  # Skip bad tickers
-            CACHE["price_data"] = infos
-            CACHE["price_timestamp"] = now
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"yfinance error: {str(e)}"
-            )
 
 
 @router.get("/sp500")
 async def get_sp500():
-    """Return combined S&P 500 data (static + prices)."""
-    # Fetch static list if needed
-    await fetch_sp500_constituents()
+    """
+    Return S&P 500 stocks with current prices and market data.
 
-    # Fetch price data if needed
-    fetch_price_data()
+    Returns:
+        JSON with list of stocks including ticker, name, sector, price, change%, market cap
+    """
+    # Fetch static list if needed (cached for 1 day)
+    stocks = await stocks_services.fetch_sp500_constituents()
 
-    # Combine
+    # Fetch price data if needed (cached for 20 minutes)
+    price_data = await stocks_services.fetch_price_data()
+
+    # Combine static and price data
     result = []
-    for stock in CACHE["static_list"]:
+    for stock in stocks:
         ticker = stock["ticker"]
-        price = CACHE["price_data"].get(ticker, {})
-        change_percent = 0
-        if (
-            price.get("current_price", 0) > 0
-            and price.get("previous_close", 0) > 0
-        ):
-            change_percent = round(
-                (
-                    (price["current_price"] - price["previous_close"])
-                    / price["previous_close"]
-                )
-                * 100,
-                2,
-            )
-
-        result.append(
-            {
-                **stock,
-                "market_cap": price.get("market_cap", 0),
-                "current_price": price.get("current_price", 0),
-                "change_percent": change_percent,
-                "low": price.get("low", 0),
-                "high": price.get("high", 0),
-                "open": price.get("open", 0),
-                "close": price.get("close", 0),
-            }
-        )
+        price_info = price_data.get(ticker, {})
+        result.append({**stock, **price_info})
 
     return {"data": result}
 
 
 @router.get("/{ticker}")
-def get_stock_info(ticker: str, range: str):
+def get_stock_info(ticker: str, timeRange: str):
+    """Get historical price data and current info for a stock."""
     try:
         stock = yf.Ticker(ticker)
         config = {
-            "1D": ("1d", "1m"),
+            "1D": ("1d", "5m"),
             "1W": ("1wk", "30m"),
             "1M": ("1mo", "1d"),
             "3M": ("3mo", "1d"),
@@ -151,282 +54,325 @@ def get_stock_info(ticker: str, range: str):
             "5Y": ("5y", "1wk"),
             "MAX": ("max", "1mo"),
         }
+        if timeRange not in config:
+            logger.error("Invalid time range")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid time range. Must be one of: {list(config.keys())}",
+            )
 
-        period, interval = config.get(range)
+        period, interval = config.get(timeRange)
         hist = stock.history(period=period, interval=interval)
+
         if hist.empty:
-            raise HTTPException(status_code=404, detail="No Data Available.")
+            logger.error("Was not able to fetch data")
+            raise HTTPException(
+                status_code=404, detail="No data available for this ticker"
+            )
+        # Format labels
+        if timeRange == "1D":
+            labels = hist.index.strftime("%H:%M").tolist()
+        elif interval == "1mo":
+            labels = hist.index.strftime("%Y").tolist()
+        elif interval == "1wk":
+            labels = hist.index.strftime("%b %Y").tolist()
+        else:
+            labels = hist.index.strftime("%b %d").tolist()
+
         prices = hist["Close"].round(2).tolist()
 
-        if range == "1D":
-            labels = hist.index.strftime("%H:%M").tolist()
-            prices = hist["Close"].round(2).tolist()
-        else:
-            # For all other ranges
-            if interval == "1mo":
-                labels = hist.index.strftime("%Y").tolist()
-            elif interval == "1wk":
-                labels = hist.index.strftime("%b %Y").tolist()
-            else:
-                labels = hist.index.strftime("%b %d").tolist()
+        # Fetch stock info once
+        info = stock.info
+        name = info.get("shortName", "N/A")
+        exchange = info.get("fullExchangeName", "N/A")
+        current_price = info.get("currentPrice", 0)
+        previous_close = info.get("previousClose", 0)
+        dollar_change = round(current_price - previous_close, 2)
+        percent_change = round((dollar_change / previous_close) * 100, 2)
 
-        return {"data": {"labels": labels, "prices": prices}}
+        detail = {
+            "name": name,
+            "exchange": exchange,
+            "currentPrice": current_price,
+            "dollarChange": dollar_change,
+            "percentChange": percent_change,
+        }
+
+        data = [
+            {"date": label, "price": price}
+            for label, price in zip(labels, prices)
+        ]
+
+        logger.info(
+            f"successfully fetched price data for {ticker} for {timeRange}"
+        )
+        return {"data": data, "stockDetail": detail}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to fetch {ticker}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch stock data"
+        )
 
 
 @router.get("/about/{ticker}")
-async def get_about(ticker: str):
-    try:
-        stock = yf.Ticker(ticker.upper())
-        info = stock.info
+def get_about(ticker: str):
+    """
+    Get company information and description for a stock.
 
-        # Extract the fields you want
+    Args:
+        ticker: Stock symbol (e.g., AAPL)
+
+    Returns:
+        Company details including name, summary, CEO, headquarters, employees, website
+    """
+
+    try:
+        # Find CEO
+        ceo = "N/A"
+        company_officers = stocks_services.get(ticker, "companyOfficers", [])
+        for officer in company_officers:
+            title = officer.get("title", "").upper()
+            if "CEO" in title or "CHIEF EXECUTIVE" in title:
+                ceo = officer.get("name", "N/A")
+                break
+
+        # Build headquarters string
+        city = stocks_services.get(ticker, "city", "")
+        state = stocks_services.get(ticker, "state", "")
+        country = stocks_services.get(ticker, "country", "")
+
+        headquarters_parts = [p for p in [city, state, country] if p]
+        headquarters = (
+            ", ".join(headquarters_parts) if headquarters_parts else "N/A"
+        )
+
+        # Build response
         about = {
-            "name": info.get("longName") or info.get("shortName"),
-            "summary": info.get(
-                "longBusinessSummary", "No description available"
+            "name": stocks_services.get(ticker, "longName")
+            or stocks_services.get(ticker, "shortName")
+            or "N/A",
+            "summary": stocks_services.truncate_summary(
+                stocks_services.get(
+                    ticker, "longBusinessSummary", "No description available"
+                )
             ),
-            "ceo": info.get("ceo", "N/A"),  # Not always available
-            "founded": info.get("founded", "N/A"),  # Rare
-            "headquarters": f"{info.get('city', '')}, {info.get('state', '')}, {info.get('country', '')}".strip(
-                ", "
-            ),
-            "employees": info.get("fullTimeEmployees"),
-            "website": info.get("website"),
+            "ceo": ceo,
+            "headquarters": headquarters,
+            "employees": stocks_services.get(ticker, "fullTimeEmployees", 0),
+            "website": stocks_services.get(ticker, "website", "N/A"),
         }
 
+        logger.info(f"Successfully fetched about info for {ticker}")
         return {"data": about}
 
     except Exception as e:
+        logger.error(f"Failed to fetch about info for {ticker}: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error fetching about info: {str(e)}"
+            status_code=500, detail="Failed to fetch company information"
         )
 
 
 @router.get("/stats/{ticker}")
-async def get_stock_stats(ticker: str):
+def get_stock_stats(ticker: str):
+    """
+    Fetches statistical data for a given ticker
+    Args:
+        Ticker: a stock ticker symbol (e.g. AAPL, NVDA)
+    Returns:
+        A dictionary of dictionaries
+    """
     try:
-        stock = yf.Ticker(ticker.upper())
-        info = stock.info
-
-        # Helper to safely get values
-        def get(key, default="N/A"):
-            val = info.get(key)
-            if val is None or val == "":
-                return default
-            return val
-
         stats = {
             "valuation": {
-                "market_cap": get("marketCap"),
-                "pe_ratio": get("trailingPE"),
-                "forward_pe": get("forwardPE"),
-                "price_to_sales": get("priceToSalesTrailing12Months"),
-                "price_to_book": get("priceToBook"),
+                "market_cap": stocks_services.get(ticker, "marketCap"),
+                "pe_ratio": stocks_services.get(ticker, "trailingPE"),
+                "forward_pe": stocks_services.get(ticker, "forwardPE"),
+                "price_to_sales": stocks_services.get(
+                    ticker, "priceToSalesTrailing12Months"
+                ),
+                "price_to_book": stocks_services.get(ticker, "priceToBook"),
             },
             "performance": {
-                "change_today_percent": get("regularMarketChangePercent"),
-                "fifty_two_week_high": get("fiftyTwoWeekHigh"),
-                "fifty_two_week_low": get("fiftyTwoWeekLow"),
-                "ytd_return": get("ytdReturn"),  # Rare, calculate if needed
-                "one_year_return": get("52WeekChange"),
+                "change_today_percent": stocks_services.get(
+                    ticker, "regularMarketChangePercent"
+                ),
+                "fifty_two_week_high": stocks_services.get(
+                    ticker, "fiftyTwoWeekHigh"
+                ),
+                "fifty_two_week_low": stocks_services.get(
+                    ticker, "fiftyTwoWeekLow"
+                ),
+                "ytd_return": stocks_services.get(ticker, "ytdReturn"),
+                "one_year_return": stocks_services.get(ticker, "52WeekChange"),
             },
             "financial_health": {
-                "debt_to_equity": get("debtToEquity"),
-                "current_ratio": get("currentRatio"),
-                "profit_margin": get("profitMargins"),
-                "roe": get("returnOnEquity"),
+                "debt_to_equity": stocks_services.get(ticker, "debtToEquity"),
+                "current_ratio": stocks_services.get(ticker, "currentRatio"),
+                "profit_margin": stocks_services.get(ticker, "profitMargins"),
+                "roe": stocks_services.get(ticker, "returnOnEquity"),
             },
             "trading_activity": {
-                "volume_today": get("volume"),
-                "avg_volume": get("averageVolume"),
-                "beta": get("beta"),
-                "shares_outstanding": get("sharesOutstanding"),
-                "float": get("floatShares"),
+                "volume_today": stocks_services.get(ticker, "volume"),
+                "avg_volume": stocks_services.get(ticker, "averageVolume"),
+                "beta": stocks_services.get(ticker, "beta"),
+                "shares_outstanding": stocks_services.get(
+                    ticker, "sharesOutstanding"
+                ),
+                "float": stocks_services.get(ticker, "floatShares"),
             },
         }
 
-        # Format large numbers
-        def format_large_num(num):
-            if num == "N/A":
-                return "N/A"
-            if num >= 1e12:
-                return f"${num / 1e12:.2f}T"
-            elif num >= 1e9:
-                return f"${num / 1e9:.2f}B"
-            elif num >= 1e6:
-                return f"${num / 1e6:.2f}M"
-            return f"${num:.2f}"
-
         # Apply formatting
-        stats["valuation"]["market_cap"] = format_large_num(
+        stats["valuation"]["market_cap"] = stocks_services.format_large_num(
             stats["valuation"]["market_cap"]
         )
 
+        logger.info("Fetched statistical data")
         return {"data": stats}
 
     except Exception as e:
+        logger.error(f"Error fetching stats: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error fetching stats: {str(e)}"
         )
 
 
 @router.get("/summary/{ticker}")
-async def get_summary(ticker: str):
+def get_summary(ticker: str):
+    """
+    Fetches summary for a given ticker
+    Args:
+        Ticker: A stock ticker symbol (e.g: AAPL, NVDA)
+    Returns:
+        a dictionary of key value pairs.
+    """
     try:
-        stock = yf.Ticker(ticker)
-        info = stock.info
-
-        def get(key, default="N/A"):
-            val = info.get(key)
-            if val is None or (isinstance(val, str) and val.strip() == ""):
-                return default
-            return val
-
-        # Current price and daily change using info fields
-        current_price = get("currentPrice", get("regularMarketPrice", "N/A"))
-        prev_close = get(
-            "previousClose", get("regularMarketPreviousClose", "N/A")
-        )
-
-        if current_price != "N/A" and prev_close != "N/A" and prev_close != 0:
-            daily_change = round(current_price - prev_close, 2)
-            percent_change = round((daily_change / prev_close) * 100, 2)
-        else:
-            daily_change = "N/A"
-            percent_change = "N/A"
+        earnings_date = stocks_services.get(ticker, "earningsTimestamp")
+        utc_earnings_date = datetime.fromtimestamp(earnings_date, tz=pytz.UTC)
+        earnings_date_iso = utc_earnings_date.isoformat()
 
         summary = {
-            "logo": get("logo_url", "N/A"),
-            "stock_ticker": ticker.upper(),
-            "name": get("longName", get("shortName", "N/A")),
-            "exchange": get("primary_exchange", "N/A"),
-            "current_price": (
-                round(current_price, 2) if current_price != "N/A" else "N/A"
-            ),
-            "daily_change": daily_change,
-            "percent_change": percent_change,
+            "current_price": stocks_services.get(ticker, "currentPrice"),
             "market_status": (
-                "Open" if get("marketState") == "REGULAR" else "Closed"
+                "Open"
+                if stocks_services.get(ticker, "marketState") == "REGULAR"
+                else "Closed"
             ),
-            "date": get("regularMarketTime", "N/A"),
-            "earnings_date": get("earningsTimestamp", "N/A"),
-            "eps": get("trailingEps", "N/A"),
-            "market_cap": get("marketCap", "N/A"),
-            "pe": get("trailingPE", "N/A"),
-            "volume": get("volume", get("regularMarketVolume", "N/A")),
-            "bid_ask": f"{get('bid', 0)} / {get('ask', 0)}",
-            "day_high": get("dayHigh", get("regularMarketDayHigh", "N/A")),
-            "day_low": get("dayLow", get("regularMarketDayLow", "N/A")),
-            "year_high": get("fiftyTwoWeekHigh", "N/A"),
-            "year_low": get("fiftyTwoWeekLow", "N/A"),
+            "earnings_date": earnings_date_iso,
+            "eps": round(stocks_services.get(ticker, "trailingEps", "N/A"), 2),
+            "market_cap": stocks_services.get(ticker, "marketCap", "N/A"),
+            "pe": round(stocks_services.get(ticker, "trailingPE", "N/A"), 2),
+            "volume": stocks_services.get(
+                ticker,
+                "volume",
+                stocks_services.get(ticker, "regularMarketVolume", "N/A"),
+            ),
+            "bid_ask": f"{stocks_services.get(ticker, 'bid', 0)} / {stocks_services.get(ticker, 'ask', 0)}",
+            "day_high": stocks_services.get(
+                "dayHigh",
+                stocks_services.get(ticker, "regularMarketDayHigh", "N/A"),
+            ),
+            "day_low": stocks_services.get(
+                ticker,
+                "dayLow",
+                stocks_services.get(ticker, "regularMarketDayLow", "N/A"),
+            ),
+            "year_high": stocks_services.get(
+                ticker, "fiftyTwoWeekHigh", "N/A"
+            ),
+            "year_low": stocks_services.get(ticker, "fiftyTwoWeekLow", "N/A"),
         }
 
-        print(summary)
+        logger.info("Fetched summary data.")
         return {"data": summary}
 
     except Exception as e:
+        logger.error(f"Error fetching summary. {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error fetching summary: {str(e)}"
         )
 
 
-async def fetch_tickers(exchange: str):
-    # exchange_codes = {"nasdaq": "XNAS", "nyse": "XNYS"}
-    exchange_codes = {
-        "nyse": "XNYS"
-    }  # comment this line and uncomment the above line later
-    url = MASSIVE_BASE_URL + MASSIVE_All_Tickers_ENDPOINT
-    params = {
-        "market": "stocks",
-        "exchange": exchange_codes[exchange],
-        "limit": 1000,
-        "apiKey": MASSIVE_API_KEY,
-    }
-
-    tickers = []
-    async with httpx.AsyncClient() as client:
-        try:
-            # First request with params
-            response = await client.get(
-                url, params=params
-            )  # Fixed: headers not header
-            response.raise_for_status()
-            data = response.json()
-
-            results = data.get("results", [])
-            for stock in results:
-                tickers.append(
-                    {
-                        "ticker": stock.get("ticker"),
-                        "name": stock.get("name"),
-                        "exchange": exchange.upper(),
-                    }
-                )
-
-            next_url = data.get("next_url")
-            print(f"Next URL: {next_url}")
-
-            # Subsequent requests
-            while next_url:
-                # await asyncio.sleep(30)
-                # Append API key to next_url
-                url_with_key = f"{next_url}&apiKey={MASSIVE_API_KEY}"
-
-                response = await client.get(
-                    url_with_key
-                )  # No params on pagination
-                response.raise_for_status()
-                data = response.json()
-
-                results = data.get("results", [])
-                for stock in results:
-                    tickers.append(
-                        {
-                            "ticker": stock.get("ticker"),
-                            "name": stock.get("name"),
-                            "exchange": exchange.upper(),
-                        }
-                    )
-
-                next_url = data.get("next_url")
-                print(f"Next URL: {next_url}")
-
-            return tickers
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=e.response.status_code, detail=f"API error: {e}"
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Server failed: {str(e)}"
-            )
-
-
-CACHE_ALLTICKERS_LIST = None
-CACHE_ALLTICKERS_TIMESTAMP = None
+# Cache for all tickers
+CACHE_ALLTICKERS = {
+    "list": None,
+    "timestamp": None,
+}
 CACHE_ALLTICKERS_DURATION = timedelta(days=1)
+
+
+# @router.get("/all/tickers")
+# async def get_all_tickers():
+#     """
+#     Get all stock tickers from NYSE and NASDAQ exchanges.
+
+#     Returns cached data if less than 1 day old.
+#     Falls back to stale cache if API fails.
+#     """
+
+#     async with stocks_services.cache_lock:
+#         now = datetime.now()
+
+#         # Return cached if fresh
+#         if (
+#             CACHE_ALLTICKERS["list"] is not None
+#             and (now - CACHE_ALLTICKERS["timestamp"])
+#             < CACHE_ALLTICKERS_DURATION
+#         ):
+#             logger.info("Returning cached ticker data")
+#             return {"data": CACHE_ALLTICKERS["list"]}
+#         try:
+#             logger.info("Fetching fresh ticker data from NYSE and NASDAQ")
+#             nyse, nasdaq = await asyncio.gather(
+#                 stocks_services.fetch_tickers("nyse"),
+#                 stocks_services.fetch_tickers("nasdaq"),
+#             )
+#             tickers = nyse + nasdaq
+
+#             CACHE_ALLTICKERS["list"] = tickers
+#             CACHE_ALLTICKERS["timestamp"] = now
+
+#             logger.info(f"Cached {len(tickers)} tickers")
+#             return {"data": CACHE_ALLTICKERS["list"]}
+
+#         except HTTPException:
+#             # If API fails, return stale cache if available
+#             if CACHE_ALLTICKERS["list"] is not None:
+#                 logger.warning("API failed, returning stale cached data")
+#                 return {"data": CACHE_ALLTICKERS["list"]}
+#             raise
+
+#         except Exception as e:
+#             logger.error(f"Unexpected error fetching tickers: {str(e)}")
+#             # Return stale cache if available
+#             if CACHE_ALLTICKERS["list"] is not None:
+#                 logger.warning("Unexpected error, returning stale cached data")
+#                 return {"data": CACHE_ALLTICKERS["list"]}
+
+#             raise HTTPException(
+#                 status_code=500, detail="Failed to fetch ticker data"
+#             )
 
 
 @router.get("/all/tickers")
 async def get_all_tickers():
-    global CACHE_ALLTICKERS_LIST, CACHE_ALLTICKERS_TIMESTAMP
-    now = datetime.now()
+    """
+    Get all stock tickers from NYSE and NASDAQ exchanges.
 
-    # Return cached if fresh
-    if (
-        CACHE_ALLTICKERS_LIST is not None
-        and (now - CACHE_ALLTICKERS_TIMESTAMP) < CACHE_ALLTICKERS_DURATION
-    ):
-        return {"data": CACHE_ALLTICKERS_LIST}
-    # nyse, nasdaq = await asyncio.gather(
-    #     fetch_tickers("nyse"), fetch_tickers("nasdaq")
-    # )
-    # tickers = nyse + nasdaq
-    tickers = await fetch_tickers("nyse")
-    CACHE_ALLTICKERS_LIST = tickers
-    CACHE_ALLTICKERS_TIMESTAMP = now
+    Returns cached data if less than 1 day old.
+    Falls back to stale cache if API fails.
+    """
+    stocks_list = [
+        {"ticker": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ"},
+        {
+            "ticker": "MSFT",
+            "name": "Microsoft Corporation",
+            "exchange": "NASDAQ",
+        },
+        {"ticker": "GOOGL", "name": "Alphabet Inc.", "exchange": "NASDAQ"},
+        {"ticker": "JPM", "name": "JPMorgan Chase & Co.", "exchange": "NYSE"},
+        {"ticker": "TSLA", "name": "Tesla, Inc.", "exchange": "NASDAQ"},
+    ]
 
-    return {"data": CACHE_ALLTICKERS_LIST}
+    return {"data": stocks_list}

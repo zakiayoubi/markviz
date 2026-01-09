@@ -1,225 +1,94 @@
 from fastapi import APIRouter, status, Depends, HTTPException
-from ..schemas import HoldingOut, HoldingCreate
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime, timedelta
+import logging
+import yfinance as yf
+
+from ..schemas import HoldingCreate
 from ..database import get_db
 from ..models import User, Holding
-import yfinance as yf
 from .auth import get_current_user
-from decimal import Decimal
-from datetime import datetime, timedelta, timezone
-import pandas_market_calendars as mcal
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/holdings", status_code=status.HTTP_201_CREATED)
-async def add_holding(
+def add_holding(  # Changed to sync
     holding_in: HoldingCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Validate ticker exists and get current price
-    print(holding_in)
+    """Add a new stock holding to the user's portfolio."""
     try:
-        stock = yf.Ticker(holding_in.ticker.upper())
-        info = stock.info
-        current_price = info.get("currentPrice") or info.get(
-            "regularMarketPrice"
+        logger.info("Printing the input user: ", holding_in)
+        new_holding = Holding(
+            user_id=current_user.id,
+            ticker=holding_in.ticker.upper(),
+            shares=holding_in.shares,
+            buy_price=holding_in.buy_price,
         )
 
-        if not current_price:
-            raise HTTPException(status_code=400, detail="No price data")
-    except:
-        raise HTTPException(status_code=400, detail="Invalid ticker")
+        db.add(new_holding)
+        db.commit()
+        db.refresh(new_holding)
 
-    # Create new holding
-    new_holding = Holding(
-        user_id=current_user.id,
-        ticker=holding_in.ticker.upper(),
-        shares=holding_in.shares,
-        buy_price=holding_in.buy_price,
-    )
+        logger.info(
+            f"User {current_user.id} added holding: {holding_in.ticker}"
+        )
+        return {
+            "message": f"Successfully added {holding_in.ticker.upper()} to your portfolio",
+            "holding_id": new_holding.id,
+            "ticker": holding_in.ticker.upper(),
+        }
 
-    db.add(new_holding)
-    db.commit()
-    db.refresh(new_holding)
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add holding")
 
-    return {"data": "The holding was successfully added.", "status": 200}
-
-
-# def fetch_stock_hist(
-#     ticker: str, start_date: datetime, end_date: datetime, timeRange: str
-# ):
-#     intervals = {
-#         "1D": "30m",
-#         "1W": "30m",
-#         "1M": "1d",
-#         "3M": "1d",
-#         "1Y": "1d",
-#         "ALL": "1d",
-#     }
-#     interval = intervals.get(timeRange)
-#     stock = yf.Ticker(ticker)
-#     hist = stock.history(start=start_date, end=end_date, interval=interval)
-#     return hist
-
-
-# @router.get("/graph")
-# async def get_portfolio(
-#     timeRange: str,
-#     db: Session = Depends(get_db),
-#     current_user: User = Depends(get_current_user),
-# ):
-#     # Get all holdings for this user
-#     holdings = (
-#         db.query(Holding).filter(Holding.user_id == current_user.id).all()
-#     )
-#     firstHolding = holdings[2]
-#     purchase_price = float(firstHolding.buy_price)
-#     ticker = firstHolding.ticker
-#     purchase_date = firstHolding.created_at
-#     now = datetime.now(purchase_date.tzinfo)
-
-#     stock = yf.Ticker(ticker)
-#     intervals = {
-#         "1D": "30m",
-#         "1W": "30m",
-#         "1M": "1d",
-#         "3M": "1d",
-#         "1Y": "1d",
-#         "ALL": "1d",
-#     }
-
-#     interval = intervals.get(timeRange)
-#     baseline_price = None
-#     baseline_date = None  # Track which date to filter from
-
-#     if timeRange == "1D":
-#         market_open_date = stock.history(
-#             start=(now - timedelta(days=1)), end=now, interval=interval
-#         ).index[0]
-#         print("market open date: ", market_open_date)
-
-#         if purchase_date > market_open_date:
-#             baseline_price = purchase_price
-#             baseline_date = purchase_date
-#             print("purchase date used as baseline price.")
-#         else:
-#             baseline_price = float(
-#                 stock.info.get("previousClose", purchase_price)
-#             )
-#             baseline_date = market_open_date
-#             print("previous close used as baseline price.")
-
-#     elif timeRange == "ALL":
-#         baseline_price = purchase_price
-#         baseline_date = purchase_date
-#         print("purchase price used as baseline (ALL time).")
-
-#     elif timeRange == "1W":
-#         seven_days_prior_date = now - timedelta(days=7)
-#         print("seven days prior date: ", seven_days_prior_date)
-
-#         if purchase_date > seven_days_prior_date:
-#             baseline_price = purchase_price
-#             baseline_date = purchase_date
-#             print("purchase date used as baseline price.")
-#         else:
-#             hist = stock.history(
-#                 start=seven_days_prior_date, end=now, interval=interval
-#             )
-#             baseline_price = round(float(hist["Close"].iloc[0]), 2)
-#             baseline_date = hist.index[0]
-#             print("seven days prior price: ", baseline_price)
-
-#     elif timeRange == "1M":
-#         thirty_days_prior_date = now - timedelta(days=30)
-#         print("thirty days prior date: ", thirty_days_prior_date)
-
-#         if purchase_date > thirty_days_prior_date:
-#             baseline_price = purchase_price
-#             baseline_date = purchase_date
-#             print("purchase date used as baseline price.")
-#         else:
-#             hist = stock.history(
-#                 start=thirty_days_prior_date, end=now, interval=interval
-#             )
-#             baseline_price = round(float(hist["Close"].iloc[0]), 2)
-#             baseline_date = hist.index[0]
-#             print("thirty days prior price: ", baseline_price)
-
-#     elif timeRange == "3M":
-#         ninety_days_prior_date = now - timedelta(days=90)
-
-#         if purchase_date > ninety_days_prior_date:
-#             baseline_price = purchase_price
-#             baseline_date = purchase_date
-#         else:
-#             hist = stock.history(
-#                 start=ninety_days_prior_date, end=now, interval=interval
-#             )
-#             baseline_price = round(float(hist["Close"].iloc[0]), 2)
-#             baseline_date = hist.index[0]
-
-#     elif timeRange == "1Y":
-#         one_year_prior_date = now - timedelta(days=365)
-
-#         if purchase_date > one_year_prior_date:
-#             baseline_price = purchase_price
-#             baseline_date = purchase_date
-#         else:
-#             hist = stock.history(
-#                 start=one_year_prior_date, end=now, interval=interval
-#             )
-#             baseline_price = round(float(hist["Close"].iloc[0]), 2)
-#             baseline_date = hist.index[0]
-
-#     print(f"Final baseline price: {baseline_price}")
-#     print(f"Baseline date: {baseline_date}")
-
-#     hist_filtered = fetch_stock_hist(ticker, baseline_date, now, timeRange)
-#     prices = hist_filtered["Close"].round(2).tolist()
-#     labels = hist_filtered.index.strftime(
-#         "%Y-%m-%d %H:%M" if interval in ["5m", "30m"] else "%Y-%m-%d"
-#     ).tolist()
-
-#     # Calculate percent change
-#     percent_change = [
-#         round((p - baseline_price) / baseline_price * 100, 2) for p in prices
-#     ]
-
-#     print("prices: ", prices)
-#     print("daily return: ", percent_change)
-#     print("lables: ", labels)
-
-#     # Build response
-#     data = [
-#         {"date": labels[i], "value": percent_change[i]}
-#         for i in range(len(labels))
-#     ]
-
-#     return {"data": data}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="An unexpected error occurred"
+        )
 
 
 def fetch_stock_hist(
     ticker: str, start_date: datetime, end_date: datetime, timeRange: str
 ):
     """
-    takes a ticker, start of the period and end of a period and a time range
-    and returns a dataframe for the period.
+    Fetch historical stock data for a given period.
+
+    Args:
+        ticker: Stock symbol
+        start_date: Start of period
+        end_date: End of period
+        timeRange: Time range string (1D, 1W, 1M, 3M, 1Y, ALL)
+
+    Returns:
+        DataFrame with historical prices
     """
     intervals = {
-        "1D": "30m",
+        "1D": "5m",
         "1W": "30m",
         "1M": "1d",
         "3M": "1d",
         "1Y": "1d",
         "ALL": "1d",
     }
-    interval = intervals.get(timeRange)
-    stock = yf.Ticker(ticker)
-    hist = stock.history(start=start_date, end=end_date, interval=interval)
-    return hist
+
+    interval = intervals.get(timeRange, "1d")
+
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(start=start_date, end=end_date, interval=interval)
+        return hist
+    except Exception as e:
+        logger.warning(f"Failed to fetch history for {ticker}: {str(e)}")
+        return None
 
 
 def determine_baseline(
@@ -232,47 +101,54 @@ def determine_baseline(
 ) -> tuple[float, datetime]:
     """
     Determine the baseline price and date based on timeRange.
-    Returns: (baseline_price, baseline_date)
+
+    Returns:
+        Tuple of (baseline_price, baseline_date)
     """
-    if timeRange == "1D":
-        hist = stock.history(
-            start=(now - timedelta(days=1)), end=now, interval=interval
-        )
-        if hist.empty:
-            return purchase_price, purchase_date
-
-        market_open_date = hist.index[0]
-
-        if purchase_date > market_open_date:
-            return purchase_price, purchase_date
-        else:
-            previous_close = float(
-                stock.info.get("previousClose", purchase_price)
-            )
-            return previous_close, market_open_date
-
-    elif timeRange == "ALL":
-        return purchase_price, purchase_date
-
-    else:
-        # Handle 1W, 1M, 3M, 1Y
-        period_days = {"1W": 7, "1M": 30, "3M": 90, "1Y": 365}
-
-        days = period_days.get(timeRange, 7)
-        period_prior_date = now - timedelta(days=days)
-
-        if purchase_date > period_prior_date:
-            return purchase_price, purchase_date
-        else:
+    try:
+        if timeRange == "1D":
             hist = stock.history(
-                start=period_prior_date, end=now, interval=interval
+                start=(now - timedelta(days=1)), end=now, interval=interval
             )
+
             if hist.empty:
                 return purchase_price, purchase_date
 
-            baseline_price = round(float(hist["Close"].iloc[0]), 2)
-            baseline_date = hist.index[0]
-            return baseline_price, baseline_date
+            market_open_date = hist.index[0]
+
+            if purchase_date > market_open_date:
+                return purchase_price, purchase_date
+            else:
+                previous_close = float(
+                    stock.info.get("previousClose", purchase_price)
+                )
+                return previous_close, market_open_date
+
+        elif timeRange == "ALL":
+            return purchase_price, purchase_date
+
+        else:
+            # Handle 1W, 1M, 3M, 1Y
+            period_days = {"1W": 7, "1M": 30, "3M": 90, "1Y": 365}
+            days = period_days.get(timeRange, 7)
+            period_prior_date = now - timedelta(days=days)
+
+            if purchase_date > period_prior_date:
+                return purchase_price, purchase_date
+            else:
+                hist = stock.history(
+                    start=period_prior_date, end=now, interval=interval
+                )
+                if hist.empty:
+                    return purchase_price, purchase_date
+
+                baseline_price = round(float(hist["Close"].iloc[0]), 2)
+                baseline_date = hist.index[0]
+                return baseline_price, baseline_date
+
+    except Exception as e:
+        logger.warning(f"Error determining baseline: {str(e)}")
+        return purchase_price, purchase_date
 
 
 def calculate_holding_data(
@@ -280,37 +156,48 @@ def calculate_holding_data(
 ) -> dict:
     """
     Calculate historical data for a single holding.
-    Returns dict with ticker, shares, baseline info, prices, and timestamps.
+
+    Returns:
+        Dict with ticker, shares, baseline info, prices, and timestamps
+        or None if data unavailable
     """
-    ticker = holding.ticker
-    purchase_price = float(holding.buy_price)
-    shares = float(holding.shares)
-    purchase_date = holding.created_at
+    try:
+        ticker = holding.ticker
+        purchase_price = float(holding.buy_price)
+        shares = float(holding.shares)
+        purchase_date = holding.created_at
 
-    stock = yf.Ticker(ticker)
+        stock = yf.Ticker(ticker)
 
-    # Determine baseline
-    baseline_price, baseline_date = determine_baseline(
-        timeRange, purchase_date, now, stock, purchase_price, interval
-    )
+        # Determine baseline
+        baseline_price, baseline_date = determine_baseline(
+            timeRange, purchase_date, now, stock, purchase_price, interval
+        )
 
-    # Fetch filtered historical data
-    hist_filtered = fetch_stock_hist(ticker, baseline_date, now, timeRange)
+        # Fetch filtered historical data
+        hist_filtered = fetch_stock_hist(ticker, baseline_date, now, timeRange)
 
-    if hist_filtered.empty:
+        if hist_filtered is None or hist_filtered.empty:
+            logger.warning(f"No historical data for {ticker}")
+            return None
+
+        prices = hist_filtered["Close"].round(2).tolist()
+        position_values = [p * shares for p in prices]
+
+        return {
+            "ticker": ticker,
+            "shares": shares,
+            "baseline_price": baseline_price,
+            "baseline_value": baseline_price * shares,
+            "position_values": position_values,
+            "timestamps": hist_filtered.index.tolist(),
+        }
+
+    except Exception as e:
+        logger.error(
+            f"Error calculating holding data for {holding.ticker}: {str(e)}"
+        )
         return None
-
-    prices = hist_filtered["Close"].round(2).tolist()
-    position_values = [p * shares for p in prices]
-
-    return {
-        "ticker": ticker,
-        "shares": shares,
-        "baseline_price": baseline_price,
-        "baseline_value": baseline_price * shares,
-        "position_values": position_values,
-        "timestamps": hist_filtered.index.tolist(),
-    }
 
 
 def calculate_portfolio_returns(
@@ -318,7 +205,9 @@ def calculate_portfolio_returns(
 ) -> list[dict]:
     """
     Calculate weighted average portfolio returns from individual holdings data.
-    Returns list of {date, value} dicts.
+
+    Returns:
+        List of dicts with date and value (return percentage)
     """
     if not all_holdings_data:
         return []
@@ -354,9 +243,7 @@ def calculate_portfolio_returns(
         portfolio_data.append(
             {
                 "date": timestamp.strftime(
-                    "%Y-%m-%d %H:%M"
-                    if interval in ["5m", "30m"]
-                    else "%Y-%m-%d"
+                    "%H:%M" if interval == "5m" else "%Y-%m-%d"
                 ),
                 "value": portfolio_return,
             }
@@ -366,101 +253,161 @@ def calculate_portfolio_returns(
 
 
 @router.get("/graph")
-async def get_portfolio(
+def get_portfolio(  # Changed to sync
     timeRange: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get portfolio performance graph data."""
-    # Get all holdings
-    holdings = (
-        db.query(Holding).filter(Holding.user_id == current_user.id).all()
-    )
+    """Get portfolio performance graph data for a specific time range."""
 
-    if not holdings:
-        return {"error": "No holdings found"}
-
-    # Set timezone-aware now
-    now = datetime.now(holdings[0].created_at.tzinfo)
-
-    # Define interval
-    intervals = {
-        "1D": "30m",
-        "1W": "30m",
-        "1M": "1d",
-        "3M": "1d",
-        "1Y": "1d",
-        "ALL": "1d",
-    }
-    interval = intervals.get(timeRange)
-
-    # Calculate data for each holding
-    all_holdings_data = []
-    print(holdings[0].created_at)
-    print(holdings[1].created_at)
-    for holding in holdings:
-        holding_data = calculate_holding_data(
-            holding, timeRange, now, interval
+    # Validate timeRange
+    valid_ranges = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
+    if timeRange not in valid_ranges:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid timeRange. Must be one of: {valid_ranges}",
         )
-        if holding_data:
-            all_holdings_data.append(holding_data)
 
-    if not all_holdings_data:
-        return {"error": "No data available for any holdings"}
+    try:
+        # Get all holdings
+        holdings = (
+            db.query(Holding).filter(Holding.user_id == current_user.id).all()
+        )
 
-    # Calculate weighted portfolio returns
-    portfolio_data = calculate_portfolio_returns(all_holdings_data, interval)
+        if not holdings:
+            return {"data": [], "holdings_count": 0}
 
-    return {"data": portfolio_data, "holdings_count": len(all_holdings_data)}
+        # Set timezone-aware now
+        now = datetime.now(holdings[0].created_at.tzinfo)
+
+        # Define interval
+        intervals = {
+            "1D": "5m",
+            "1W": "30m",
+            "1M": "1d",
+            "3M": "1d",
+            "1Y": "1d",
+            "ALL": "1d",
+        }
+        interval = intervals[timeRange]
+
+        # Calculate data for each holding
+        all_holdings_data = []
+        for holding in holdings:
+            holding_data = calculate_holding_data(
+                holding, timeRange, now, interval
+            )
+            if holding_data:
+                all_holdings_data.append(holding_data)
+
+        if not all_holdings_data:
+            logger.warning(f"No data available for user {current_user.id}")
+            return {"data": [], "holdings_count": 0}
+
+        # Calculate weighted portfolio returns
+        portfolio_data = calculate_portfolio_returns(
+            all_holdings_data, interval
+        )
+
+        logger.info(
+            f"User {current_user.id} fetched portfolio graph ({timeRange})"
+        )
+        return {
+            "data": portfolio_data,
+            "holdings_count": len(all_holdings_data),
+        }
+
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Database error")
+
+    except Exception as e:
+        logger.error(f"Error fetching portfolio graph: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch portfolio data"
+        )
 
 
 @router.get("/table")
-async def get_portfolio_table(
+def get_portfolio_table(  # Changed to sync
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Get current portfolio holdings with prices and returns."""
+
     try:
         holdings = (
             db.query(Holding).filter(Holding.user_id == current_user.id).all()
         )
+
         if not holdings:
-            return {"error": "No holdings found"}
+            return {"data": []}
+
         data = []
         for h in holdings:
-            stock = yf.Ticker(h.ticker)
-            name = stock.info.get("longName")
-            current_price = stock.info.get("currentPrice")
-            previous_close = stock.info.get("previousClose")
+            try:
+                stock = yf.Ticker(h.ticker)
+                info = stock.info
 
-            data.append(
-                {
-                    "ticker": h.ticker,
-                    "name": name,
-                    "shares": float(h.shares),
-                    "currentPrice": current_price,
-                    "totalValue": round(
-                        (
-                            (current_price - float(h.buy_price))
-                            * float(h.shares)
-                        ),
-                        2,
-                    ),
-                    "todayChangePercent": round(
-                        (((current_price / previous_close) - 1) * 100), 2
-                    ),
-                    "allTimeReturn": round(
-                        ((current_price - float(h.buy_price)) - 1) * 100, 2
-                    ),
-                    "allTimeReturnAmount": round(
-                        (current_price - float(h.buy_price)) * float(h.shares),
-                        2,
-                    ),
-                }
-            )
+                name = info.get("longName", "N/A")
+                current_price = info.get("currentPrice", 0)
+                previous_close = info.get("previousClose", 0)
 
+                # Calculate metrics with safety checks
+                shares = float(h.shares)
+                buy_price = float(h.buy_price)
+
+                total_value = (
+                    round(current_price * shares, 2) if current_price else 0
+                )
+
+                today_change = (
+                    round(((current_price / previous_close) - 1) * 100, 2)
+                    if current_price and previous_close
+                    else 0
+                )
+
+                all_time_return = (
+                    round(((current_price / buy_price) - 1) * 100, 2)
+                    if current_price and buy_price
+                    else 0
+                )
+
+                all_time_return_amount = (
+                    round((current_price - buy_price) * shares, 2)
+                    if current_price and buy_price
+                    else 0
+                )
+
+                data.append(
+                    {
+                        "ticker": h.ticker,
+                        "name": name,
+                        "shares": shares,
+                        "currentPrice": current_price,
+                        "totalValue": total_value,
+                        "todayChangePercent": today_change,
+                        "allTimeReturn": all_time_return,
+                        "allTimeReturnAmount": all_time_return_amount,
+                    }
+                )
+
+            except Exception as e:
+                logger.warning(
+                    f"Failed to fetch data for {h.ticker}: {str(e)}"
+                )
+                # Skip this holding and continue
+                continue
+
+        logger.info(f"User {current_user.id} fetched portfolio table")
         return {"data": data}
+
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Database error")
+
     except Exception as e:
-        print(e)
+        logger.error(f"Error fetching portfolio table: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"unable to fetch data: {e}"
+            status_code=500, detail="Failed to fetch portfolio data"
         )

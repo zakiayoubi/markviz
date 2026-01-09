@@ -1,0 +1,65 @@
+version: '3.8'
+# Docker compose: orchestrates multiple containers to work together. 
+
+services: # list of containers to run
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: markviz-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: markviz
+    volumes: # persist database data
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - markviz-network # custom network so containers can talk to each other
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend (FastAPI)
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: markviz-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/markviz
+      SECRET_KEY: ${SECRET_KEY}
+      API_NINJAS_KEY: ${API_NINJAS_KEY}
+      MASSIVE_API_KEY: ${MASSIVE_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - markviz-network
+    volumes:
+      - ./server:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: markviz-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - markviz-network
+
+volumes:
+  postgres_data:
+
+networks:
+  markviz-network:
+    driver: bridge

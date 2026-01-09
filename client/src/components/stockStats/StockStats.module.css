@@ -1,0 +1,48 @@
+
+.statSector {
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: solid var(--bg-secondary) 2px;
+    padding: .5rem 0;
+}
+
+.title {
+    align-self: center;
+    margin: 1rem 0;
+}
+
+.key {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.value {
+    color: var(--text-muted);
+}
+
+
+.statsContainer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 columns default */
+    gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .statsContainer {
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 columns on medium */
+    }
+}
+
+@media (max-width: 640px) {
+    .statsContainer {
+        grid-template-columns: 1fr;
+        /* 1 column on small */
+    }
+}

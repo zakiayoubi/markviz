@@ -1,6 +1,6 @@
 # Data shapes: defines input and output shapes (Pydantic models)
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from decimal import Decimal
 from typing import List
 
@@ -9,12 +9,12 @@ from typing import List
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
-    email: str
+    email: EmailStr
     password: str
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -36,7 +36,7 @@ class HoldingOut(BaseModel):
     gain_loss: Decimal | None = None
     gain_loss_percent: float | None = None
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 

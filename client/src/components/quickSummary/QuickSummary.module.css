@@ -1,0 +1,37 @@
+.container {
+    border: solid var(--text-secondary) 2px;
+    padding: 1rem;
+    border-radius: 1rem;
+    max-width: 440px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.header {
+    padding: .5rem;
+    max-width: 400px;
+    width: 100%;
+}
+
+.header span {
+    color: var(--text-secondary)
+}
+.stockDetail {
+    max-width: 400px;
+    width: 100%;
+}
+.stockDetail tr {
+    display: flex;
+    justify-content: space-between;
+    gap: 4rem;
+    border-bottom: solid var(--text-primary) 2px;
+    margin: .5rem
+}
+
+.stockDetail td {
+    color: var(--text-secondary)
+}
+
+

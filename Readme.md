@@ -1,20 +1,20 @@
-## Read this before you use this package. 
-To run the app: 
-type in the console from the project root: uvicorn app.main:app --reload (for reload on changes)
+# MarkViz
 
-To run the test:
-type in the console from the project root: pytest -vvs
+## Setup
 
-## Run the app with Docker (easiest & recommended)
-
-### 1. Pull the latest image
+1. Install dependencies:
 ```bash
-docker pull zakiayoubi/markviz:latest
+pip install -r requirements.txt
+```
 
-# 1. Build the image locally (uses your Dockerfile)
-docker build -t markviz:latest .
+2. Create `.env` file (use `.env.example` as template)
 
-# run this command: 
+3. Run the app:
+```bash
+uvicorn app.main:app --reload
+```
 
-docker run -p 8000:8000 -e FMP_API_KEY=YOUR_OWN_API_KEY zakiayoubi/markviz:latest
-
+## Run Tests
+```bash
+pytest
+```

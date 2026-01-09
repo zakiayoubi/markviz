@@ -1,0 +1,82 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+
+}
+
+.titleContainer {
+    margin-bottom: 1rem;
+}
+
+.currency {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-secondary)
+}
+
+.dailyReturn {
+    display: flex;
+    gap: 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.gain {
+    color: var(--gain)
+}
+
+.loss {
+    color: var(--loss)
+}
+
+.rangeContainer {
+    /* border: solid blue 2px; */
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 0 .4rem;
+}
+
+.timeRangeBtn {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-weight: normal;
+    transition: all 0.2s;
+}
+
+.timeRangeBtn:hover {
+    background-color: var(--text-secondary);
+}
+
+.timeRangeBtn.active {
+    background-color: var(--gain);
+    color: var(--text-primary);
+    font-weight: 800;
+    border-color: var(--accent);
+}
+
+.graphContainer {
+    /* border: solid red 2px; */
+    margin-right: 1rem;
+}
+
+.detail {
+    margin-left: 2.2rem;
+}
+
+@media (max-width: 768px) {
+    .rangeContainer {
+        display: flex;
+        flex-wrap: wrap;
+
+    }
+}

@@ -18,11 +18,11 @@
 }
 
 .input:hover {
-    outline: solid white 1px;
+    outline: solid var(--text-secondary) 1px;
 }
 
 .input:focus {
-    outline: solid white 2px
+    outline: solid var(--text-secondary) 2px
 }
 
 .suggestionCard {

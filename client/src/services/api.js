@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000"
+const API_URL = import.meta.env.VITE_API_URL
 
 export const api = {
     // this is how you add a method to an object: method: ...
@@ -10,7 +10,7 @@ export const api = {
         if (token) {
             headers["Authorization"] = `Bearer ${token}`
         }
-        const response = await fetch(API_BASE_URL + endpoint, {headers: headers});
+        const response = await fetch(API_URL + endpoint, {headers: headers});
         if (!response.ok) {
              throw new Error("Network error")
         }
@@ -24,7 +24,7 @@ export const api = {
         if (token) {
             headers["Authorization"] = `Bearer ${token}`
         }
-        const response = await fetch(API_BASE_URL + endpoint, {
+        const response = await fetch(API_URL + endpoint, {
             method: "POST",
             headers: headers,
             body: JSON.stringify(data)
