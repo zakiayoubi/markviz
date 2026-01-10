@@ -88,6 +88,7 @@ jobs:
   # Job 4: Test frontend
   test-frontend:
     runs-on: ubuntu
+    timeout-minutes: 2
 
     steps:
       - name: Check code
