@@ -100,7 +100,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./client
-        run: npm CI
+        run: npm ci
 
       - name: Build frontend
         working-directory: ./client
