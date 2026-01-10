@@ -88,7 +88,6 @@ jobs:
   # Job 4: Test frontend
   test-frontend:
     runs-on: ubuntu
-    needs: [test-backend, lint-backend, security-check]
 
     steps:
       - name: Check code
@@ -98,10 +97,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './client/package-lock.json'
 
       - name: Install dependencies
         working-directory: ./client
-        run: npm ci
+        run: npm install
 
       - name: Build frontend
         working-directory: ./client
