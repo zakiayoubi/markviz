@@ -10,7 +10,7 @@ import os
 load_dotenv()
 
 # Get the database URL
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 
 # create the SQLAlchemy engine
 # it connects to the postgres database and handles openning and closing the
