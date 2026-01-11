@@ -27,3 +27,8 @@ app.include_router(portfolio.router)
 @app.get("/live")
 def live():
     return {"status": "ok"}
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "MarkViz API is running"}

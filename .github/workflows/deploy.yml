@@ -70,6 +70,9 @@ jobs:
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json"
+
+      - name: Backend deployment triggered
+        run: echo "🚀 Backend deployment triggered on Render"
       
       - name: Trigger Render frontend deployment
         run: |
@@ -77,5 +80,5 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json"
       
-      - name: Deployment complete
-        run: echo "🚀 Deployment triggered on Render!"
+      - name: Frontend deployment triggered
+        run: echo "🚀 Frontend deployment triggered on Render!"
