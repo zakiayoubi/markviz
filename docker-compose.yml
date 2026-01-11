@@ -42,7 +42,7 @@ services: # list of containers to run
       - markviz-network
     volumes:
       - ./server:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 
 
   # Frontend (React + Vite)
   frontend:
