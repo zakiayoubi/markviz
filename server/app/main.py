@@ -5,12 +5,12 @@ import os
 
 app = FastAPI()
 
-origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
-origins = [o.strip() for o in origins_str.split(",")]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:5173",  # Local dev
+        "https://markviz.onrender.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
