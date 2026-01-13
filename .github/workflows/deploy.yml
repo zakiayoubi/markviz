@@ -56,8 +56,8 @@ jobs:
       
       - name: Images published
         run: |
-          echo "✅ Backend image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
-          echo "✅ Frontend image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest"
+          echo "Backend image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
+          echo "Frontend image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest"
   
   # Deploy to Render using Docker images
   deploy:
