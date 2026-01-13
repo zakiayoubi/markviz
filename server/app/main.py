@@ -6,7 +6,11 @@ from .database import Base, engine
 app = FastAPI()
 
 # Create database tables on startup
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+    logging.info("✅ Database tables created successfully")
+except Exception as e:
+    logging.error(f"❌ Failed to create tables: {e}")
 
 app.add_middleware(
     CORSMiddleware,
