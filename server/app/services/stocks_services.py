@@ -204,7 +204,10 @@ async def fetch_price_data():
             price_data = {}
 
             # Create all fetch tasks
-            tasks = [fetch_single_ticker_async(ticker) for ticker in tickers]
+            # tasks = [fetch_single_ticker_async(ticker) for ticker in tickers]
+            tasks = [
+                fetch_single_ticker_async(ticker) for ticker in tickers[:5]
+            ]
 
             # Run all tasks concurrently
             results = await asyncio.gather(*tasks, return_exceptions=True)
