@@ -30,7 +30,7 @@ async def get_sp500():
 
     # Combine static and price data
     result = []
-    for stock in stocks:
+    for stock in stocks[:5]:
         ticker = stock["ticker"]
         price_info = price_data.get(ticker, {})
         result.append({**stock, **price_info})
