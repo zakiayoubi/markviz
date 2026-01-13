@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+
 from .database import Base, engine
+from .models import User, Holding  # Import models FIRST
 
 app = FastAPI()
 
-# Create database tables on startup
+# Now create tables (Base knows about User, Holding)
 try:
     Base.metadata.create_all(bind=engine)
     logging.info("✅ Database tables created successfully")
@@ -15,7 +17,7 @@ except Exception as e:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Local dev
+        "http://localhost:5173",
         "https://markviz.onrender.com",
     ],
     allow_credentials=True,
@@ -23,9 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Logging config
 logging.basicConfig(level=logging.INFO)
-
 
 from .routes import auth, stocks, portfolio
 
@@ -34,7 +34,6 @@ app.include_router(stocks.router)
 app.include_router(portfolio.router)
 
 
-# health check route
 @app.get("/live")
 def live():
     return {"status": "ok"}
