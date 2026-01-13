@@ -1,18 +1,27 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-
 from .database import Base, engine
 from .models import User, Holding  # Import models FIRST
+from contextlib import asynccontextmanager
+from .scheduler import start_scheduler, shutdown_scheduler
 
-app = FastAPI()
 
-# Now create tables (Base knows about User, Holding)
-try:
+logging.basicConfig(level=logging.INFO)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown."""
     Base.metadata.create_all(bind=engine)
-    logging.info("✅ Database tables created successfully")
-except Exception as e:
-    logging.error(f"❌ Failed to create tables: {e}")
+    logging.info("✅ Database tables created")
+
+    start_scheduler()
+    yield
+    shutdown_scheduler()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,8 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(level=logging.INFO)
 
 from .routes import auth, stocks, portfolio
 

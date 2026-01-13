@@ -302,59 +302,6 @@ CACHE_ALLTICKERS = {
 CACHE_ALLTICKERS_DURATION = timedelta(days=1)
 
 
-# @router.get("/all/tickers")
-# async def get_all_tickers():
-#     """
-#     Get all stock tickers from NYSE and NASDAQ exchanges.
-
-#     Returns cached data if less than 1 day old.
-#     Falls back to stale cache if API fails.
-#     """
-
-#     async with stocks_services.cache_lock:
-#         now = datetime.now()
-
-#         # Return cached if fresh
-#         if (
-#             CACHE_ALLTICKERS["list"] is not None
-#             and (now - CACHE_ALLTICKERS["timestamp"])
-#             < CACHE_ALLTICKERS_DURATION
-#         ):
-#             logger.info("Returning cached ticker data")
-#             return {"data": CACHE_ALLTICKERS["list"]}
-#         try:
-#             logger.info("Fetching fresh ticker data from NYSE and NASDAQ")
-#             nyse, nasdaq = await asyncio.gather(
-#                 stocks_services.fetch_tickers("nyse"),
-#                 stocks_services.fetch_tickers("nasdaq"),
-#             )
-#             tickers = nyse + nasdaq
-
-#             CACHE_ALLTICKERS["list"] = tickers
-#             CACHE_ALLTICKERS["timestamp"] = now
-
-#             logger.info(f"Cached {len(tickers)} tickers")
-#             return {"data": CACHE_ALLTICKERS["list"]}
-
-#         except HTTPException:
-#             # If API fails, return stale cache if available
-#             if CACHE_ALLTICKERS["list"] is not None:
-#                 logger.warning("API failed, returning stale cached data")
-#                 return {"data": CACHE_ALLTICKERS["list"]}
-#             raise
-
-#         except Exception as e:
-#             logger.error(f"Unexpected error fetching tickers: {str(e)}")
-#             # Return stale cache if available
-#             if CACHE_ALLTICKERS["list"] is not None:
-#                 logger.warning("Unexpected error, returning stale cached data")
-#                 return {"data": CACHE_ALLTICKERS["list"]}
-
-#             raise HTTPException(
-#                 status_code=500, detail="Failed to fetch ticker data"
-#             )
-
-
 @router.get("/all/tickers")
 async def get_all_tickers():
     """
@@ -363,16 +310,46 @@ async def get_all_tickers():
     Returns cached data if less than 1 day old.
     Falls back to stale cache if API fails.
     """
-    stocks_list = [
-        {"ticker": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ"},
-        {
-            "ticker": "MSFT",
-            "name": "Microsoft Corporation",
-            "exchange": "NASDAQ",
-        },
-        {"ticker": "GOOGL", "name": "Alphabet Inc.", "exchange": "NASDAQ"},
-        {"ticker": "JPM", "name": "JPMorgan Chase & Co.", "exchange": "NYSE"},
-        {"ticker": "TSLA", "name": "Tesla, Inc.", "exchange": "NASDAQ"},
-    ]
 
-    return {"data": stocks_list}
+    async with stocks_services.cache_lock:
+        now = datetime.now()
+
+        # Return cached if fresh
+        if (
+            CACHE_ALLTICKERS["list"] is not None
+            and (now - CACHE_ALLTICKERS["timestamp"])
+            < CACHE_ALLTICKERS_DURATION
+        ):
+            logger.info("Returning cached ticker data")
+            return {"data": CACHE_ALLTICKERS["list"]}
+        try:
+            logger.info("Fetching fresh ticker data from NYSE and NASDAQ")
+            nyse, nasdaq = await asyncio.gather(
+                stocks_services.fetch_tickers("nyse"),
+                stocks_services.fetch_tickers("nasdaq"),
+            )
+            tickers = nyse + nasdaq
+
+            CACHE_ALLTICKERS["list"] = tickers
+            CACHE_ALLTICKERS["timestamp"] = now
+
+            logger.info(f"Cached {len(tickers)} tickers")
+            return {"data": CACHE_ALLTICKERS["list"]}
+
+        except HTTPException:
+            # If API fails, return stale cache if available
+            if CACHE_ALLTICKERS["list"] is not None:
+                logger.warning("API failed, returning stale cached data")
+                return {"data": CACHE_ALLTICKERS["list"]}
+            raise
+
+        except Exception as e:
+            logger.error(f"Unexpected error fetching tickers: {str(e)}")
+            # Return stale cache if available
+            if CACHE_ALLTICKERS["list"] is not None:
+                logger.warning("Unexpected error, returning stale cached data")
+                return {"data": CACHE_ALLTICKERS["list"]}
+
+            raise HTTPException(
+                status_code=500, detail="Failed to fetch ticker data"
+            )
